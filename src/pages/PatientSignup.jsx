@@ -41,7 +41,7 @@ const LineInput = ({ label, name, type = "text", value, onChange, error, ...prop
           onChange={onChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="peer w-full resize-none border-b-2 border-slate-200 bg-transparent py-2 text-xl font-medium text-slate-900 transition-colors duration-300 focus:border-slate-900 focus:outline-none min-h-[40px]"
+          className="peer w-full resize-none border-b-2 border-slate-200 bg-transparent py-2 text-xl font-medium text-slate-900 transition-colors duration-300 focus:border-slate-900 focus:outline-none min-h-10"
           {...props}
         />
       ) : type === "select" ? (
@@ -177,7 +177,7 @@ export default function PatientSignup({ onSignup }) {
   return (
     <main className="relative min-h-screen bg-[#F5F5F7] px-6 py-20 selection:bg-slate-300 sm:px-12 lg:px-24">
       {/* Ultra Minimal Background - Just an off-white canvas with a subtle grain */}
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.04] [background-image:url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.04] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
       <div className="relative z-10 mx-auto w-full max-w-3xl">
         

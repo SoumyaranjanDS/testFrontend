@@ -20,7 +20,6 @@ import Features from "./components/Features";
 import HowToUse from "./components/HowToUse";
 import Testimonials from "./components/Testimonials";
 
-
 import PatientSignup from "./pages/PatientSignup";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
@@ -146,7 +145,7 @@ function AppInner() {
             path="/dashboard/doctor"
             element={
               <ProtectedRole session={session} role="doctor">
-                <DoctorDashboard session={session} />
+                <DoctorDashboard session={session} onLogout={onLogout} />
               </ProtectedRole>
             }
           />
@@ -154,7 +153,7 @@ function AppInner() {
             path="/dashboard/patient"
             element={
               <ProtectedRole session={session} role="patient">
-                <PatientDashboard session={session} />
+                <PatientDashboard session={session} onLogout={onLogout} />
               </ProtectedRole>
             }
           />

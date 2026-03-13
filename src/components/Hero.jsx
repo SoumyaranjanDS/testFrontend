@@ -18,23 +18,15 @@ const mobileHelperText = "Private support for sensitive symptoms.";
 export default function Hero({
   onOpenLogin = () => {},
   onOpenSignup = () => {},
+  isLoggedIn = false,
 }) {
   const [showMessage, setShowMessage] = useState(false);
   const [typedText, setTypedText] = useState("");
-
-  const handleMobileLogin = () => {
-    onOpenLogin?.();
-  };
-
-  const handleMobileSignup = () => {
-    onOpenSignup?.();
-  };
 
   useEffect(() => {
     const revealTimer = setTimeout(() => {
       setShowMessage(true);
     }, 900);
-
     return () => clearTimeout(revealTimer);
   }, []);
 
@@ -45,10 +37,7 @@ export default function Hero({
     const typeTimer = setInterval(() => {
       index += 1;
       setTypedText(helperText.slice(0, index));
-
-      if (index >= helperText.length) {
-        clearInterval(typeTimer);
-      }
+      if (index >= helperText.length) clearInterval(typeTimer);
     }, 18);
 
     return () => clearInterval(typeTimer);
@@ -95,29 +84,32 @@ export default function Hero({
             reach the right care path with clarity.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.95, delay: 0.22, ease: easeSmooth }}
-            className="mt-8 flex items-center justify-center gap-3 lg:hidden"
-          >
-            <button
-              type="button"
-              onClick={handleMobileLogin}
-              className="btn-secondary px-5 py-3 text-sm font-semibold"
+          {!isLoggedIn && (
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.95, delay: 0.22, ease: easeSmooth }}
+              className="mt-8 flex items-center justify-center gap-3 lg:hidden"
             >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={handleMobileSignup}
-              className="btn-primary px-5 py-3 text-sm font-semibold"
-            >
-              Sign up
-            </button>
-          </motion.div>
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                className="btn-secondary px-5 py-3 text-sm font-semibold"
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={onOpenSignup}
+                className="btn-primary px-5 py-3 text-sm font-semibold"
+              >
+                Sign up
+              </button>
+            </motion.div>
+          )}
         </div>
 
+        {/* Mobile popup above avatar */}
         {showMessage && (
           <motion.div
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -139,6 +131,7 @@ export default function Hero({
           </motion.div>
         )}
 
+        {/* Review avatars + text */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -171,13 +164,13 @@ export default function Hero({
                 </motion.div>
               ))}
             </div>
-
             <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">
               100+ happy clients
             </p>
           </div>
         </motion.div>
 
+        {/* Desktop typing popup */}
         {showMessage && (
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
