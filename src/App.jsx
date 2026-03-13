@@ -24,7 +24,7 @@ import Testimonials from "./components/Testimonials";
 import PatientSignup from "./pages/PatientSignup";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
-import DoctorSignup from "./pages/Doctorsignup";
+import DoctorSignup from "./components/DoctorSignup";
 
 const SESSION_KEY = "veda_session";
 
