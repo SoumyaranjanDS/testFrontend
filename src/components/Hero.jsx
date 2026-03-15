@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 const avatars = [
-  { name: "Aarav", initials: "AR", image: "" },
-  { name: "Riya", initials: "RI", image: "" },
-  { name: "Kabir", initials: "KA", image: "" },
-  { name: "Meera", initials: "ME", image: "" },
-  { name: "Diya", initials: "DI", image: "" },
-  { name: "Ishaan", initials: "IS", image: "" },
+  { name: "Aarav", initials: "AR", image: "/rimg1.jpg" },
+  { name: "Riya", initials: "RI", image: "/rimg2.jpg" },
+  { name: "Kabir", initials: "KA", image: "/rimg3.jpg" },
+  { name: "Meera", initials: "ME", image: "/rimg4.jpg" },
+  { name: "Diya", initials: "DI", image: "/rimg5.jpg" },
+  { name: "Ishaan", initials: "IS", image: "/rimg6.jpg" },
 ];
 
 const easeSmooth = [0.22, 1, 0.36, 1];

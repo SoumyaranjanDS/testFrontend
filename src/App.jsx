@@ -7,6 +7,8 @@ import {
   Routes,
   useInRouterContext,
   useLocation,
+  useNavigate,
+  useSearchParams,
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -69,13 +71,16 @@ function LandingPage({ isLoggedIn, session, onOpenLogin, onOpenSignup }) {
 
 function AppInner() {
   const location = useLocation();
-  const isHome = location.pathname === "/";
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [session, setSession] = useState(readSession);
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [signupOpen, setSignupOpen] = useState(false);
-
   const isLoggedIn = useMemo(() => Boolean(session?.email), [session]);
+  const isHome = location.pathname === "/";
+
+  const modal = searchParams.get("modal");
+  const loginOpen = modal === "login" && !isLoggedIn;
+  const signupOpen = modal === "signup" && !isLoggedIn;
 
   useEffect(() => {
     const onStorage = (e) => {
@@ -85,28 +90,45 @@ function AppInner() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  const clearModalFromUrl = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("modal");
+    next.delete("role");
+    setSearchParams(next, { replace: true });
+  };
+
+  const openLogin = (role = "patient") => {
+    if (location.pathname !== "/") {
+      navigate(`/?modal=login&role=${role}`);
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.set("modal", "login");
+    next.set("role", role);
+    setSearchParams(next, { replace: false });
+  };
+
+  const openSignup = () => {
+    if (location.pathname !== "/") {
+      navigate("/?modal=signup");
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.set("modal", "signup");
+    next.delete("role");
+    setSearchParams(next, { replace: false });
+  };
+
   const onAuth = (nextSession) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
-    setLoginOpen(false);
-    setSignupOpen(false);
+    clearModalFromUrl();
   };
 
   const onLogout = () => {
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
-    setLoginOpen(false);
-    setSignupOpen(false);
-  };
-
-  const openLogin = () => {
-    setSignupOpen(false);
-    setLoginOpen(true);
-  };
-
-  const openSignup = () => {
-    setLoginOpen(false);
-    setSignupOpen(true);
+    clearModalFromUrl();
   };
 
   return (
@@ -131,10 +153,15 @@ function AppInner() {
               />
             }
           />
+
+          <Route path="/login" element={<Navigate to="/?modal=login&role=patient" replace />} />
+          <Route path="/login/patient" element={<Navigate to="/?modal=login&role=patient" replace />} />
+          <Route path="/login/doctor" element={<Navigate to="/?modal=login&role=doctor" replace />} />
+
           <Route path="/signup" element={<Navigate to="/" replace />} />
           <Route
             path="/signup/doctor"
-            element={isLoggedIn ? <Navigate to="/" replace /> : <DoctorSignup onSignup={onAuth}/>}
+            element={isLoggedIn ? <Navigate to="/" replace /> : <DoctorSignup onSignup={onAuth} />}
           />
           <Route
             path="/signup/patient"
@@ -158,7 +185,6 @@ function AppInner() {
             }
           />
 
-          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -166,14 +192,14 @@ function AppInner() {
       <Footer />
 
       <LoginModal
-        open={loginOpen && !isLoggedIn}
-        onClose={() => setLoginOpen(false)}
+        open={loginOpen}
+        onClose={clearModalFromUrl}
         onLogin={onAuth}
         onOpenSignup={openSignup}
       />
       <SignupModal
-        open={signupOpen && !isLoggedIn}
-        onClose={() => setSignupOpen(false)}
+        open={signupOpen}
+        onClose={clearModalFromUrl}
         onOpenLogin={openLogin}
       />
     </>
