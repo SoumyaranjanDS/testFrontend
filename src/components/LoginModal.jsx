@@ -136,10 +136,6 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
                   </button>
                 </header>
 
-                <div className="mb-3 text-[10px] text-slate-400">
-                  URL supports: <span className="font-semibold">?modal=login&role=patient</span> or{" "}
-                  <span className="font-semibold">role=doctor</span>
-                </div>
 
                 <div className="mb-8 flex gap-6 border-b border-slate-100">
                   {["patient", "doctor"].map((role) => (
