@@ -25,9 +25,13 @@ import Testimonials from "./components/Testimonials";
 import PatientSignup from "./pages/PatientSignup";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
+import AdminVerificationPanel from "./pages/AdminVerificationPanel";
+
 import DoctorSignup from "./components/DoctorSignup";
+import DoctorVerification from "./components/DoctorVerification";
 
 const SESSION_KEY = "veda_session";
+const DOCTORS_KEY = "veda_doctors";
 
 function readSession() {
   try {
@@ -37,15 +41,61 @@ function readSession() {
   }
 }
 
+function readList(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function getDoctorByEmail(email) {
+  if (!email) return null;
+  return readList(DOCTORS_KEY).find(
+    (d) => d.email?.toLowerCase() === email.toLowerCase()
+  );
+}
+
 function ProtectedRole({ session, role, children }) {
   if (!session?.email) return <Navigate to="/" replace />;
   if (session.role !== role) {
-    return (
-      <Navigate
-        to={session.role === "doctor" ? "/dashboard/doctor" : "/dashboard/patient"}
-        replace
-      />
-    );
+    if (session.role === "doctor") return <Navigate to="/doctor/verification" replace />;
+    if (session.role === "admin") return <Navigate to="/admin/verification" replace />;
+    return <Navigate to="/dashboard/patient" replace />;
+  }
+  return children;
+}
+
+function ProtectedDoctorDashboard({ session, doctorVerificationStatus, children }) {
+  if (!session?.email) return <Navigate to="/" replace />;
+  if (session.role !== "doctor") {
+    if (session.role === "admin") return <Navigate to="/admin/verification" replace />;
+    return <Navigate to="/dashboard/patient" replace />;
+  }
+  if (doctorVerificationStatus !== "verified") {
+    return <Navigate to="/doctor/verification" replace />;
+  }
+  return children;
+}
+
+function ProtectedDoctorVerification({ session, doctorVerificationStatus, children }) {
+  if (!session?.email) return <Navigate to="/" replace />;
+  if (session.role !== "doctor") {
+    if (session.role === "admin") return <Navigate to="/admin/verification" replace />;
+    return <Navigate to="/dashboard/patient" replace />;
+  }
+  if (doctorVerificationStatus === "verified") {
+    return <Navigate to="/dashboard/doctor" replace />;
+  }
+  return children;
+}
+
+function ProtectedAdmin({ session, children }) {
+  if (!session?.email) return <Navigate to="/" replace />;
+  if (session.role !== "admin") {
+    if (session.role === "doctor") return <Navigate to="/doctor/verification" replace />;
+    if (session.role === "patient") return <Navigate to="/dashboard/patient" replace />;
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -75,8 +125,17 @@ function AppInner() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [session, setSession] = useState(readSession);
+  const [doctorRefresh, setDoctorRefresh] = useState(0);
+
   const isLoggedIn = useMemo(() => Boolean(session?.email), [session]);
   const isHome = location.pathname === "/";
+
+  const doctorProfile = useMemo(() => {
+    if (session?.role !== "doctor" || !session?.email) return null;
+    return getDoctorByEmail(session.email);
+  }, [session, doctorRefresh]);
+
+  const doctorVerificationStatus = doctorProfile?.verificationStatus || "not_submitted";
 
   const modal = searchParams.get("modal");
   const loginOpen = modal === "login" && !isLoggedIn;
@@ -85,9 +144,16 @@ function AppInner() {
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === SESSION_KEY) setSession(readSession());
+      if (e.key === DOCTORS_KEY) setDoctorRefresh((v) => v + 1);
     };
+    const onDoctorUpdated = () => setDoctorRefresh((v) => v + 1);
+
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("veda:doctor-updated", onDoctorUpdated);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("veda:doctor-updated", onDoctorUpdated);
+    };
   }, []);
 
   const clearModalFromUrl = () => {
@@ -122,6 +188,7 @@ function AppInner() {
   const onAuth = (nextSession) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
+    setDoctorRefresh((v) => v + 1);
     clearModalFromUrl();
   };
 
@@ -135,6 +202,7 @@ function AppInner() {
     <>
       <Navbar
         session={session}
+        doctorVerificationStatus={doctorVerificationStatus}
         onLogout={onLogout}
         onOpenLogin={openLogin}
         onOpenSignup={openSignup}
@@ -169,19 +237,44 @@ function AppInner() {
           />
 
           <Route
-            path="/dashboard/doctor"
+            path="/doctor/verification"
             element={
-              <ProtectedRole session={session} role="doctor">
-                <DoctorDashboard session={session} onLogout={onLogout} />
-              </ProtectedRole>
+              <ProtectedDoctorVerification
+                session={session}
+                doctorVerificationStatus={doctorVerificationStatus}
+              >
+                <DoctorVerification session={session} />
+              </ProtectedDoctorVerification>
             }
           />
+
+          <Route
+            path="/dashboard/doctor"
+            element={
+              <ProtectedDoctorDashboard
+                session={session}
+                doctorVerificationStatus={doctorVerificationStatus}
+              >
+                <DoctorDashboard session={session} onLogout={onLogout} />
+              </ProtectedDoctorDashboard>
+            }
+          />
+
           <Route
             path="/dashboard/patient"
             element={
               <ProtectedRole session={session} role="patient">
                 <PatientDashboard session={session} onLogout={onLogout} />
               </ProtectedRole>
+            }
+          />
+
+          <Route
+            path="/admin/verification"
+            element={
+              <ProtectedAdmin session={session}>
+                <AdminVerificationPanel />
+              </ProtectedAdmin>
             }
           />
 

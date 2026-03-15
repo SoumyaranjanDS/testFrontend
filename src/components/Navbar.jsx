@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -10,6 +11,7 @@ import {
   Info,
   Zap,
   Star,
+  ShieldCheck,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -35,7 +37,20 @@ const linkVariants = {
   open: { opacity: 1, x: 0, transition: { duration: 0.4, ease: easeSmooth } },
 };
 
-export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup }) {
+function statusStyle(status) {
+  if (status === "verified") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (status === "rejected") return "bg-rose-50 text-rose-700 border-rose-200";
+  if (status === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-slate-50 text-slate-600 border-slate-200";
+}
+
+export default function Navbar({
+  session,
+  doctorVerificationStatus = "not_submitted",
+  onLogout,
+  onOpenLogin,
+  onOpenSignup,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,6 +58,10 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const isLoggedIn = Boolean(session?.email);
+  const isDoctor = session?.role === "doctor";
+  const isAdmin = session?.role === "admin";
+  const doctorNeedsVerification = isDoctor && doctorVerificationStatus !== "verified";
+
   const dashboardPath = useMemo(
     () => (session?.role === "doctor" ? "/dashboard/doctor" : "/dashboard/patient"),
     [session?.role]
@@ -76,15 +95,24 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleOpenLogin = () => {
+  const goPrimaryAuthRoute = () => {
     setMenuOpen(false);
-    onOpenLogin?.();
+    if (!isLoggedIn) return;
+
+    if (isAdmin) {
+      navigate("/admin/verification");
+      return;
+    }
+
+    if (doctorNeedsVerification) {
+      navigate("/doctor/verification");
+      return;
+    }
+
+    navigate(dashboardPath);
   };
 
-  const handleOpenSignup = () => {
-    setMenuOpen(false);
-    onOpenSignup?.();
-  };
+  const primaryLabel = isAdmin ? "Admin Panel" : doctorNeedsVerification ? "Verification" : "Dashboard";
 
   return (
     <>
@@ -122,7 +150,7 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
               {!isLoggedIn ? (
                 <>
                   <button
-                    onClick={handleOpenLogin}
+                    onClick={() => onOpenLogin?.("patient")}
                     className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors ${
                       loginActive ? "text-blue-600" : "text-slate-900"
                     }`}
@@ -130,7 +158,7 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
                     Login
                   </button>
                   <button
-                    onClick={handleOpenSignup}
+                    onClick={onOpenSignup}
                     className={`px-5 py-2 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full transition-colors ${
                       signupActive ? "bg-blue-700 text-white" : "bg-[#0a1128] text-white"
                     }`}
@@ -139,12 +167,28 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
                   </button>
                 </>
               ) : (
-                <div className="flex items-center">
+                <div className="flex items-center gap-1">
+                  {isDoctor && (
+                    <span
+                      className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${statusStyle(
+                        doctorVerificationStatus
+                      )}`}
+                    >
+                      {doctorVerificationStatus}
+                    </span>
+                  )}
+
+                  {isAdmin && (
+                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-700">
+                      admin
+                    </span>
+                  )}
+
                   <button
-                    onClick={() => navigate(dashboardPath)}
+                    onClick={goPrimaryAuthRoute}
                     className="px-5 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600"
                   >
-                    Dashboard
+                    {primaryLabel}
                   </button>
                   <button
                     onClick={() => setShowLogoutConfirm(true)}
@@ -207,11 +251,14 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
                 ))}
               </div>
 
-              <motion.div variants={linkVariants} className="mt-auto p-6 bg-slate-50/80">
+              <motion.div variants={linkVariants} className="mt-auto p-6 bg-slate-50/80 space-y-3">
                 {!isLoggedIn ? (
-                  <div className="flex flex-col gap-3">
+                  <>
                     <button
-                      onClick={handleOpenLogin}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenLogin?.("patient");
+                      }}
                       className={`w-full border py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest ${
                         loginActive
                           ? "bg-blue-50 border-blue-200 text-blue-700"
@@ -221,24 +268,38 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
                       Login
                     </button>
                     <button
-                      onClick={handleOpenSignup}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenSignup?.();
+                      }}
                       className={`w-full py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-900/10 ${
                         signupActive ? "bg-blue-700 text-white" : "bg-[#0a1128] text-white"
                       }`}
                     >
                       Sign Up
                     </button>
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <>
+                    {isDoctor && (
+                      <div className={`flex items-center justify-center gap-2 rounded-2xl border py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${statusStyle(doctorVerificationStatus)}`}>
+                        <ShieldCheck size={14} />
+                        {doctorVerificationStatus}
+                      </div>
+                    )}
+
+                    {isAdmin && (
+                      <div className="flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-700">
+                        <ShieldCheck size={14} />
+                        admin
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        navigate(dashboardPath);
-                      }}
+                      onClick={goPrimaryAuthRoute}
                       className="w-full bg-[#0a1128] text-white py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"
                     >
-                      <LayoutDashboard size={14} /> Dashboard
+                      <LayoutDashboard size={14} /> {primaryLabel}
                     </button>
                     <button
                       onClick={() => {
@@ -249,7 +310,7 @@ export default function Navbar({ session, onLogout, onOpenLogin, onOpenSignup })
                     >
                       <LogOut size={14} /> Sign Out
                     </button>
-                  </div>
+                  </>
                 )}
               </motion.div>
             </motion.aside>

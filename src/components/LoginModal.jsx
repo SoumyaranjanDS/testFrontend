@@ -1,9 +1,19 @@
+// src/components/LoginModal.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const DOCTORS_KEY = "veda_doctors";
 const PATIENTS_KEY = "veda_patients";
+
+/**
+ * Hidden admin credentials (demo only).
+ * TODO(BACKEND): move admin auth to secure backend login.
+ */
+const ADMIN_CREDENTIALS = [
+  { email: "admin@vedaai.com", password: "Admin@123", name: "Super Admin" },
+  { email: "review@vedaai.com", password: "Review@123", name: "Verification Admin" },
+];
 
 const readList = (key) => {
   try {
@@ -32,8 +42,16 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
 
   useEffect(() => {
     const nextRole = isValidRole(roleFromUrl) ? roleFromUrl : "patient";
-    setForm((prev) => ({ ...prev, role: nextRole }));
+    setForm({ role: nextRole, email: "", password: "" });
+    setError("");
+    setShowPassword(false);
   }, [roleFromUrl]);
+
+  const resetAuthFields = (roleValue = form.role) => {
+    setForm({ role: roleValue, email: "", password: "" });
+    setError("");
+    setShowPassword(false);
+  };
 
   if (!open) return null;
 
@@ -49,6 +67,8 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
     next.delete("modal");
     next.delete("role");
     setSearchParams(next, { replace: true });
+
+    resetAuthFields(isValidRole(roleFromUrl) ? roleFromUrl : "patient");
     onClose?.();
   };
 
@@ -56,11 +76,36 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
     e.preventDefault();
     setError("");
 
+    const email = form.email.trim().toLowerCase();
+    const password = form.password;
+
+    // Hidden admin login through doctor role
+    if (form.role === "doctor") {
+      const adminMatch = ADMIN_CREDENTIALS.find(
+        (a) => a.email.toLowerCase() === email && a.password === password
+      );
+
+      if (adminMatch) {
+        const adminSession = {
+          id: `admin-${adminMatch.email}`,
+          role: "admin",
+          name: adminMatch.name,
+          email: adminMatch.email,
+          loggedInAt: new Date().toISOString(),
+        };
+
+        resetAuthFields("doctor");
+        onLogin?.(adminSession);
+        navigate("/admin/verification");
+        return;
+      }
+    }
+
     const users = form.role === "doctor" ? readList(DOCTORS_KEY) : readList(PATIENTS_KEY);
     const found = users.find(
       (u) =>
-        u.email.toLowerCase() === form.email.trim().toLowerCase() &&
-        u.password === form.password
+        u.email.toLowerCase() === email &&
+        u.password === password
     );
 
     if (!found) {
@@ -73,16 +118,24 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
       role: form.role,
       name: found.fullName,
       email: found.email,
+      verificationStatus: found.verificationStatus || "not_submitted",
       loggedInAt: new Date().toISOString(),
     };
 
+    resetAuthFields(form.role);
     onLogin?.(nextSession);
-    navigate(form.role === "doctor" ? "/dashboard/doctor" : "/dashboard/patient");
+
+    if (form.role === "doctor") {
+      const status = found.verificationStatus || "not_submitted";
+      navigate(status === "verified" ? "/dashboard/doctor" : "/doctor/verification");
+    } else {
+      navigate("/dashboard/patient");
+    }
   };
 
   const switchRole = (role) => {
-    setForm((p) => ({ ...p, role }));
     setRoleInUrl(role);
+    resetAuthFields(role);
   };
 
   const goToSignup = () => {
@@ -135,7 +188,6 @@ export default function LoginModal({ open, onClose, onLogin, onOpenSignup }) {
                     </svg>
                   </button>
                 </header>
-
 
                 <div className="mb-8 flex gap-6 border-b border-slate-100">
                   {["patient", "doctor"].map((role) => (

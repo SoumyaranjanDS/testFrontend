@@ -128,7 +128,10 @@ export default function DoctorSignup({ onSignup }) {
       experienceYears: Number(form.experienceYears),
       clinicAddress: form.clinicAddress.trim(),
       city: form.city.trim(),
-      verificationStatus: "pending",
+
+      // Key workflow status
+      verificationStatus: "not_submitted",
+      verificationReviewReason: "",
       createdAt: new Date().toISOString(),
     };
 
@@ -141,13 +144,16 @@ export default function DoctorSignup({ onSignup }) {
       role: doctor.role,
       name: doctor.fullName,
       email: doctor.email,
+      verificationStatus: doctor.verificationStatus,
       loggedInAt: new Date().toISOString(),
     };
 
     // TODO(BACKEND): Replace localStorage session with server token/session response
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     onSignup?.(session);
-    navigate("/dashboard/doctor");
+
+    window.dispatchEvent(new Event("veda:doctor-updated"));
+    navigate("/doctor/verification");
   };
 
   const inputClass =
@@ -158,7 +164,6 @@ export default function DoctorSignup({ onSignup }) {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-cyan-50 to-white px-4 py-10 sm:px-6 lg:px-8">
-      {/* background */}
       <motion.div
         animate={{ y: [0, -20, 0], x: [0, 14, 0] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
@@ -176,7 +181,6 @@ export default function DoctorSignup({ onSignup }) {
       />
 
       <section className="mx-auto grid max-w-7xl items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-        {/* left content */}
         <motion.div
           initial={{ opacity: 0, x: -50, filter: "blur(12px)" }}
           animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
@@ -207,33 +211,11 @@ export default function DoctorSignup({ onSignup }) {
             transition={{ delay: 0.28, duration: 0.7 }}
             className="mt-5 max-w-lg text-base leading-7 text-slate-600"
           >
-            Create your doctor account, submit your professional details, and get ready
-            for verification. The layout is kept simple, soft, and distraction-free for a
-            better signup flow.
+            Create your doctor account, submit your professional details, and continue
+            to verification.
           </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38, duration: 0.7 }}
-            className="mt-8 space-y-4"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-500" />
-              <p className="text-sm text-slate-600">Professional verification-ready form</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-1 h-2.5 w-2.5 rounded-full bg-sky-500" />
-              <p className="text-sm text-slate-600">Minimal design with soft interactions</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-500" />
-              <p className="text-sm text-slate-600">Same logic, upgraded visual feel</p>
-            </div>
-          </motion.div>
         </motion.div>
 
-        {/* form */}
         <motion.section
           initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
           whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -253,176 +235,85 @@ export default function DoctorSignup({ onSignup }) {
           >
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Full name</label>
-              <input
-                name="fullName"
-                value={form.fullName}
-                onChange={onChange}
-                placeholder="Dr. Your full name"
-                className={inputClass}
-              />
+              <input name="fullName" value={form.fullName} onChange={onChange} placeholder="Dr. Your full name" className={inputClass} />
               {errors.fullName && <p className={errorClass}>{errors.fullName}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Email</label>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={onChange}
-                placeholder="doctor@example.com"
-                className={inputClass}
-              />
+              <input name="email" type="email" value={form.email} onChange={onChange} placeholder="doctor@example.com" className={inputClass} />
               {errors.email && <p className={errorClass}>{errors.email}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Phone</label>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                placeholder="10 digit phone number"
-                className={inputClass}
-              />
+              <input name="phone" value={form.phone} onChange={onChange} placeholder="10 digit phone number" className={inputClass} />
               {errors.phone && <p className={errorClass}>{errors.phone}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Specialization</label>
-              <input
-                name="specialization"
-                value={form.specialization}
-                onChange={onChange}
-                placeholder="Cardiology, Dermatology..."
-                className={inputClass}
-              />
+              <input name="specialization" value={form.specialization} onChange={onChange} placeholder="Cardiology, Dermatology..." className={inputClass} />
               {errors.specialization && <p className={errorClass}>{errors.specialization}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Medical license number</label>
-              <input
-                name="licenseNumber"
-                value={form.licenseNumber}
-                onChange={onChange}
-                placeholder="Enter your license number"
-                className={inputClass}
-              />
+              <input name="licenseNumber" value={form.licenseNumber} onChange={onChange} placeholder="Enter your license number" className={inputClass} />
               {errors.licenseNumber && <p className={errorClass}>{errors.licenseNumber}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Hospital / Clinic name</label>
-              <input
-                name="hospitalName"
-                value={form.hospitalName}
-                onChange={onChange}
-                placeholder="Hospital or clinic"
-                className={inputClass}
-              />
+              <input name="hospitalName" value={form.hospitalName} onChange={onChange} placeholder="Hospital or clinic" className={inputClass} />
               {errors.hospitalName && <p className={errorClass}>{errors.hospitalName}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Years of experience</label>
-              <input
-                name="experienceYears"
-                type="number"
-                min="0"
-                max="60"
-                value={form.experienceYears}
-                onChange={onChange}
-                placeholder="Years of experience"
-                className={inputClass}
-              />
+              <input name="experienceYears" type="number" min="0" max="60" value={form.experienceYears} onChange={onChange} placeholder="Years of experience" className={inputClass} />
               {errors.experienceYears && <p className={errorClass}>{errors.experienceYears}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>City</label>
-              <input
-                name="city"
-                value={form.city}
-                onChange={onChange}
-                placeholder="City"
-                className={inputClass}
-              />
+              <input name="city" value={form.city} onChange={onChange} placeholder="City" className={inputClass} />
               {errors.city && <p className={errorClass}>{errors.city}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants} className="sm:col-span-2">
               <label className={labelClass}>Clinic address</label>
-              <input
-                name="clinicAddress"
-                value={form.clinicAddress}
-                onChange={onChange}
-                placeholder="Enter clinic address"
-                className={inputClass}
-              />
+              <input name="clinicAddress" value={form.clinicAddress} onChange={onChange} placeholder="Enter clinic address" className={inputClass} />
               {errors.clinicAddress && <p className={errorClass}>{errors.clinicAddress}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Password</label>
-              <input
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={onChange}
-                placeholder="Create password"
-                className={inputClass}
-              />
+              <input name="password" type="password" value={form.password} onChange={onChange} placeholder="Create password" className={inputClass} />
               {errors.password && <p className={errorClass}>{errors.password}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants}>
               <label className={labelClass}>Confirm password</label>
-              <input
-                name="confirmPassword"
-                type="password"
-                value={form.confirmPassword}
-                onChange={onChange}
-                placeholder="Confirm password"
-                className={inputClass}
-              />
+              <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={onChange} placeholder="Confirm password" className={inputClass} />
               {errors.confirmPassword && <p className={errorClass}>{errors.confirmPassword}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants} className="sm:col-span-2 pt-1">
               <label className="flex items-start gap-3 rounded-3xl border border-slate-200/80 bg-slate-50/70 px-4 py-4 text-sm text-slate-600 shadow-sm">
-                <input
-                  type="checkbox"
-                  name="consent"
-                  checked={form.consent}
-                  onChange={onChange}
-                  className="mt-1 h-4 w-4 rounded accent-cyan-500"
-                />
-                <span>
-                  I confirm these details are correct and consent to verification.
-                </span>
+                <input type="checkbox" name="consent" checked={form.consent} onChange={onChange} className="mt-1 h-4 w-4 rounded accent-cyan-500" />
+                <span>I confirm these details are correct and consent to verification.</span>
               </label>
               {errors.consent && <p className={errorClass}>{errors.consent}</p>}
             </motion.div>
 
-            <motion.div
-              variants={itemVariants}
-              className="sm:col-span-2 mt-2 flex flex-col gap-3 sm:flex-row"
-            >
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.985 }}
-                type="submit"
-                className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-6 py-4 text-sm font-semibold text-white shadow-[0_15px_35px_rgba(14,165,233,0.28)] transition-all duration-300"
-              >
+            <motion.div variants={itemVariants} className="sm:col-span-2 mt-2 flex flex-col gap-3 sm:flex-row">
+              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.985 }} type="submit" className="rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-6 py-4 text-sm font-semibold text-white shadow-[0_15px_35px_rgba(14,165,233,0.28)] transition-all duration-300">
                 Create Doctor Account
               </motion.button>
 
               <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.985 }}>
-                <Link
-                  to="/signup"
-                  className="block rounded-full border border-slate-200 bg-white px-6 py-4 text-center text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-cyan-300 hover:text-cyan-700"
-                >
+                <Link to="/signup" className="block rounded-full border border-slate-200 bg-white px-6 py-4 text-center text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-cyan-300 hover:text-cyan-700">
                   Back to role selection
                 </Link>
               </motion.div>
